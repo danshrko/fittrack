@@ -1,44 +1,27 @@
 node_modules/
-**/node_modules/
 
-/dist/
-/frontend/dist/
-/backend/dist/
-/build/
-
-.vite/
+dist/
+build/
 
 .env
-.env.*.local
-.env.local
+.env.*
 
+*.log
 npm-debug.log*
 yarn-debug.log*
-yarn-error.log*
 pnpm-debug.log*
-*.log
 
 .DS_Store
 .vscode/
 .idea/
-*.sublime-workspace
-*.sublime-project
 
-coverage/
+.vite/
 .cache/
-
-*.tgz
-
-*.sqlite
-
-/frontend/dist/
+coverage/
 
 pids/
 *.pid
 *.seed
 
-**/.env
-
-/backend/.env
-/frontend/.env
-
+*.tgz
+*.sqlite

@@ -1,19 +1,9 @@
--- ============================================
--- FITTRACK DATABASE - COMPLETE SCHEMA
--- ============================================
-
--- Drop database if exists (clean start)
 DROP DATABASE IF EXISTS fittrack;
 
--- Create database
 CREATE DATABASE fittrack CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 
--- Use database
 USE fittrack;
 
--- ============================================
--- TABLE 1: USERS
--- ============================================
 CREATE TABLE users (
     id INT PRIMARY KEY AUTO_INCREMENT,
     email VARCHAR(255) UNIQUE NOT NULL,
@@ -25,9 +15,6 @@ CREATE TABLE users (
     INDEX idx_role (role)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- ============================================
--- TABLE 2: EXERCISES
--- ============================================
 CREATE TABLE exercises (
     id INT PRIMARY KEY AUTO_INCREMENT,
     name VARCHAR(100) NOT NULL,
@@ -41,9 +28,6 @@ CREATE TABLE exercises (
     INDEX idx_exercise_type (exercise_type)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- ============================================
--- TABLE 3: WORKOUT TEMPLATES
--- ============================================
 CREATE TABLE workout_templates (
     id INT PRIMARY KEY AUTO_INCREMENT,
     user_id INT NOT NULL,
@@ -56,9 +40,6 @@ CREATE TABLE workout_templates (
     INDEX idx_updated_at (updated_at)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- ============================================
--- TABLE 4: TEMPLATE EXERCISES
--- ============================================
 CREATE TABLE template_exercises (
     id INT PRIMARY KEY AUTO_INCREMENT,
     template_id INT NOT NULL,
@@ -72,9 +53,6 @@ CREATE TABLE template_exercises (
     INDEX idx_order (template_id, order_index)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- ============================================
--- TABLE 5: WORKOUT SESSIONS
--- ============================================
 CREATE TABLE workout_sessions (
     id INT PRIMARY KEY AUTO_INCREMENT,
     user_id INT NOT NULL,
@@ -93,9 +71,6 @@ CREATE TABLE workout_sessions (
     INDEX idx_template_id (template_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- ============================================
--- TABLE 6: SESSION EXERCISES
--- ============================================
 CREATE TABLE session_exercises (
     id INT PRIMARY KEY AUTO_INCREMENT,
     session_id INT NOT NULL,
@@ -109,9 +84,6 @@ CREATE TABLE session_exercises (
     INDEX idx_order (session_id, order_index)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- ============================================
--- TABLE 7: EXERCISE SETS
--- ============================================
 CREATE TABLE exercise_sets (
     id INT PRIMARY KEY AUTO_INCREMENT,
     session_exercise_id INT NOT NULL,
@@ -126,9 +98,6 @@ CREATE TABLE exercise_sets (
     INDEX idx_set_number (session_exercise_id, set_number)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- ============================================
--- TABLE 8: PERSONAL RECORDS
--- ============================================
 CREATE TABLE personal_records (
     id INT PRIMARY KEY AUTO_INCREMENT,
     user_id INT NOT NULL,
@@ -146,18 +115,9 @@ CREATE TABLE personal_records (
     INDEX idx_achieved_at (achieved_at)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- ============================================
--- SEED DATA: ADMIN USER
--- ============================================
--- Password: admin123 (hashed with bcrypt)
 INSERT INTO users (email, password_hash, name, role) VALUES 
 ('admin@fittrack.com', '$2a$10$ycKFJr0eddlRll9ux5hPO.U28bhZ2Irj6OLmt1EWsVHJhfmF6qQfS', 'Admin User', 'admin');
 
--- ============================================
--- SEED DATA: 30 GLOBAL EXERCISES
--- ============================================
-
--- Chest Exercises (5)
 INSERT INTO exercises (name, muscle_group, exercise_type, created_by) VALUES
 ('Bench Press', 'Chest', 'strength', NULL),
 ('Incline Bench Press', 'Chest', 'strength', NULL),
@@ -165,7 +125,6 @@ INSERT INTO exercises (name, muscle_group, exercise_type, created_by) VALUES
 ('Push-ups', 'Chest', 'bodyweight', NULL),
 ('Chest Dips', 'Chest', 'bodyweight', NULL);
 
--- Back Exercises (5)
 INSERT INTO exercises (name, muscle_group, exercise_type, created_by) VALUES
 ('Deadlift', 'Back', 'strength', NULL),
 ('Pull-ups', 'Back', 'bodyweight', NULL),
@@ -173,7 +132,6 @@ INSERT INTO exercises (name, muscle_group, exercise_type, created_by) VALUES
 ('Lat Pulldown', 'Back', 'strength', NULL),
 ('T-Bar Row', 'Back', 'strength', NULL);
 
--- Legs Exercises (5)
 INSERT INTO exercises (name, muscle_group, exercise_type, created_by) VALUES
 ('Squats', 'Legs', 'strength', NULL),
 ('Leg Press', 'Legs', 'strength', NULL),
@@ -181,44 +139,29 @@ INSERT INTO exercises (name, muscle_group, exercise_type, created_by) VALUES
 ('Leg Curl', 'Legs', 'strength', NULL),
 ('Calf Raises', 'Legs', 'strength', NULL);
 
--- Shoulders Exercises (4)
 INSERT INTO exercises (name, muscle_group, exercise_type, created_by) VALUES
 ('Overhead Press', 'Shoulders', 'strength', NULL),
 ('Lateral Raises', 'Shoulders', 'strength', NULL),
 ('Front Raises', 'Shoulders', 'strength', NULL),
 ('Rear Delt Flyes', 'Shoulders', 'strength', NULL);
 
--- Arms Exercises (4)
 INSERT INTO exercises (name, muscle_group, exercise_type, created_by) VALUES
 ('Barbell Curl', 'Arms', 'strength', NULL),
 ('Tricep Dips', 'Arms', 'bodyweight', NULL),
 ('Hammer Curls', 'Arms', 'strength', NULL),
 ('Tricep Pushdown', 'Arms', 'strength', NULL);
 
--- Core Exercises (4)
 INSERT INTO exercises (name, muscle_group, exercise_type, created_by) VALUES
 ('Plank', 'Core', 'bodyweight', NULL),
 ('Russian Twists', 'Core', 'bodyweight', NULL),
 ('Leg Raises', 'Core', 'bodyweight', NULL),
 ('Cable Crunches', 'Core', 'strength', NULL);
 
--- Cardio Exercises (3)
 INSERT INTO exercises (name, muscle_group, exercise_type, created_by) VALUES
 ('Treadmill', 'Cardio', 'cardio', NULL),
 ('Cycling', 'Cardio', 'cardio', NULL),
 ('Rowing Machine', 'Cardio', 'cardio', NULL);
 
--- ============================================
--- VERIFICATION QUERIES
--- ============================================
--- Run these to verify setup:
--- SELECT COUNT(*) as table_count FROM information_schema.tables WHERE table_schema = 'fittrack';
--- SELECT COUNT(*) as user_count FROM users;
--- SELECT COUNT(*) as exercise_count FROM exercises;
-
--- ============================================
--- TABLE 9: SERVICE TOKENS (for automation)
--- ============================================
 CREATE TABLE service_tokens (
     id INT PRIMARY KEY AUTO_INCREMENT,
     name VARCHAR(100) NOT NULL,
@@ -231,4 +174,3 @@ CREATE TABLE service_tokens (
     INDEX idx_created_by (created_by),
     INDEX idx_revoked (revoked)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
