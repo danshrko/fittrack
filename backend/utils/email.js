@@ -62,7 +62,31 @@ export async function sendEmail({ to, subject, html, text }) {
 
     return info;
   } catch (error) {
-    console.error('Email sending failed:', error.message);
+    console.error('Email sending failed:', error && error.message ? error.message : error);
+
+    
+    if (process.env.NODE_ENV !== 'production') {
+      try {
+        console.log('Attempting to resend email via Ethereal test account (dev fallback)');
+        const testAccount = await nodemailer.createTestAccount();
+        const testTransport = nodemailer.createTransport({
+          host: 'smtp.ethereal.email',
+          port: 587,
+          secure: false,
+          auth: { user: testAccount.user, pass: testAccount.pass }
+        });
+
+        const from = process.env.SMTP_FROM || testAccount.user || 'no-reply@fittrack.dev';
+        const info = await testTransport.sendMail({ from, to, subject, text, html });
+        const preview = nodemailer.getTestMessageUrl(info);
+        console.log('Fallback test email preview:', preview);
+        return info;
+      } catch (fallbackErr) {
+        console.error('Fallback email sending failed:', fallbackErr && fallbackErr.message ? fallbackErr.message : fallbackErr);
+        throw new Error('Failed to send email');
+      }
+    }
+
     throw new Error('Failed to send email');
   }
 }

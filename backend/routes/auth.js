@@ -126,7 +126,7 @@ router.post('/forgot', [body('email').isEmail().withMessage('Valid email is requ
           <div style="font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background:#f5f5f5; padding:24px;">
             <div style="max-width:480px; margin:0 auto; background:#ffffff; border-radius:8px; padding:24px; border:1px solid #e0e0e0;">
               <h1 style="margin:0 0 16px 0; font-size:20px; color:#111111;">Reset your Fittrack password</h1>
-              <p style="margin:0 0 8px 0; color:#444444;">Hi ${user.name || 'there'},</p>
+              <p style="margin:0 0 8px 0; color:#444444;">Hi ${usr.name || 'there'},</p>
               <p style="margin:0 0 12px 0; color:#444444;">We received a request to reset your password. Click the button below to choose a new one. This link is only valid for <strong>1 hour</strong>.</p>
               <p style="margin:0 0 20px 0; text-align:center;"><a href="${resetLink}" style="display:inline-block; padding:10px 18px; background:#111111; color:#ffffff; text-decoration:none; border-radius:4px; font-size:14px;">Reset password</a></p>
               <p style="margin:0 0 8px 0; color:#777777; font-size:12px;">If the button doesn't work, copy and paste this link into your browser:</p>

@@ -104,10 +104,10 @@
                 <li v-for="(s, idx) in group.sets" :key="group.date + '-' + idx">
                   <div class="history-row">
                     <div class="history-row-main">Set {{ s.set_number }} — {{ s.reps }} reps</div>
-                    <div class="history-row-meta">
-                      <span v-if="s.weight_kg !== null">{{ s.weight_kg }} kg</span>
-                      <span v-if="s.duration_seconds !== null"> • {{ s.duration_seconds }}s</span>
-                    </div>
+                            <div class="history-row-meta">
+                            <span v-if="s.weight_kg !== null">{{ s.weight_kg }} kg</span>
+                            <span v-if="s.duration_seconds !== null"> • {{ secondsToMinutes(s.duration_seconds) }}m</span>
+                          </div>
                   </div>
                 </li>
               </ul>
@@ -143,6 +143,11 @@ const exerciseForm = ref({
   muscle_group: '',
   exercise_type: ''
 });
+
+function secondsToMinutes(sec) {
+  if (!sec && sec !== 0) return '';
+  return Math.round(Number(sec) / 60);
+}
 
 const showExerciseType = computed(() => exerciseForm.value.muscle_group !== 'Cardio');
 
@@ -359,6 +364,13 @@ function formatType(type) {
 .exercise-header h3 {
   margin: 0;
   color: #333;
+}
+
+.exercise-header h3 {
+  max-width: calc(100% - 90px);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .badge {

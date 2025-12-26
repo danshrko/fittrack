@@ -69,60 +69,60 @@ import { useAuthStore } from '../../stores/auth';
 
 const authStore = useAuthStore();
 
-const profileForm = ref({ name: authStore.user?.name || '', email: authStore.user?.email || '' });
+const form = ref({ name: authStore.user?.name || '', email: authStore.user?.email || '' });
 
-const isSaving = ref(false);
-const infoMsg = ref('');
-const errMsg = ref('');
+const saving = ref(false);
+const message = ref('');
+const error = ref('');
 
-const pwdForm = ref({ currentPassword: '', newPassword: '' });
-const pwdSaving = ref(false);
-const pwdMsg = ref('');
-const pwdErr = ref('');
+const passwordForm = ref({ currentPassword: '', newPassword: '' });
+const passwordSaving = ref(false);
+const passwordMessage = ref('');
+const passwordError = ref('');
 
 async function saveProfile() {
-  if (!profileForm.value.name.trim() || !profileForm.value.email.trim()) {
-    errMsg.value = 'Name and email are required.';
-    infoMsg.value = '';
+  if (!form.value.name.trim() || !form.value.email.trim()) {
+    error.value = 'Name and email are required.';
+    message.value = '';
     return;
   }
 
-  isSaving.value = true;
-  errMsg.value = '';
-  infoMsg.value = '';
+  saving.value = true;
+  error.value = '';
+  message.value = '';
 
   try {
-    const response = await api.put('/auth/profile', { name: profileForm.value.name.trim(), email: profileForm.value.email.trim() });
+    const response = await api.put('/auth/profile', { name: form.value.name.trim(), email: form.value.email.trim() });
     authStore.user = response.data.user;
     localStorage.setItem('user', JSON.stringify(response.data.user));
-    infoMsg.value = 'Profile updated.';
+    message.value = 'Profile updated.';
   } catch (err) {
-    errMsg.value = err.response?.data?.error || 'Failed to update profile';
+    error.value = err.response?.data?.error || 'Failed to update profile';
   } finally {
-    isSaving.value = false;
+    saving.value = false;
   }
 }
 
 async function changePassword() {
-  pwdErr.value = '';
-  pwdMsg.value = '';
+  passwordError.value = '';
+  passwordMessage.value = '';
 
-  if (!pwdForm.value.currentPassword || !pwdForm.value.newPassword) {
-    pwdErr.value = 'Both current and new password are required.';
+  if (!passwordForm.value.currentPassword || !passwordForm.value.newPassword) {
+    passwordError.value = 'Both current and new password are required.';
     return;
   }
 
-  pwdSaving.value = true;
+  passwordSaving.value = true;
 
   try {
-    await api.put('/auth/password', { currentPassword: pwdForm.value.currentPassword, newPassword: pwdForm.value.newPassword });
-    pwdForm.value.currentPassword = '';
-    pwdForm.value.newPassword = '';
-    pwdMsg.value = 'Password updated successfully.';
+    await api.put('/auth/password', { currentPassword: passwordForm.value.currentPassword, newPassword: passwordForm.value.newPassword });
+    passwordForm.value.currentPassword = '';
+    passwordForm.value.newPassword = '';
+    passwordMessage.value = 'Password updated successfully.';
   } catch (err) {
-    pwdErr.value = err.response?.data?.error || 'Failed to update password';
+    passwordError.value = err.response?.data?.error || 'Failed to update password';
   } finally {
-    pwdSaving.value = false;
+    passwordSaving.value = false;
   }
 }
 </script>

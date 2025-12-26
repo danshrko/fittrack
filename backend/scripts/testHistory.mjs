@@ -21,7 +21,7 @@ async function run(exerciseId = 1, userId = 1, limit = 20) {
     console.error('Query error:', err);
     process.exitCode = 1;
   } finally {
-    // close pool
+    
     try { await pool.end(); } catch (e) {}
   }
 }

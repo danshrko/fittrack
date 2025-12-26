@@ -25,8 +25,8 @@
               <div class="overview-label">Workouts this week</div>
             </div>
             <div class="overview-item">
-              <div class="overview-value">{{ avgDurationThisWeek }}</div>
-              <div class="overview-label">Avg duration (min) this week</div>
+              <div class="overview-value">{{ avgDurationThisWeek }}m</div>
+              <div class="overview-label">Avg duration this week</div>
             </div>
           </div>
         </div>
