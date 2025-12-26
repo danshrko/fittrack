@@ -3,40 +3,36 @@ import { ref } from 'vue';
 import api from '../services/api';
 
 export const useTemplateStore = defineStore('templates', () => {
-  const templates = ref([]);
-  const currentTemplate = ref(null);
-  const loading = ref(false);
+  const tplList = ref([]);
+  const activeTpl = ref(null);
+  const busy = ref(false);
 
-  async function fetchTemplates() {
-    loading.value = true;
+  async function loadTemplates() {
+    busy.value = true;
     try {
       const response = await api.get('/templates');
-      templates.value = response.data.templates;
-      return templates.value;
+      tplList.value = response.data.templates;
+      return tplList.value;
     } catch (error) {
       throw error.response?.data?.error || 'Failed to fetch templates';
-    } finally {
-      loading.value = false;
-    }
+    } finally { busy.value = false; }
   }
 
-  async function fetchTemplate(id) {
-    loading.value = true;
+  async function loadTemplate(id) {
+    busy.value = true;
     try {
       const response = await api.get(`/templates/${id}`);
-      currentTemplate.value = response.data.template;
-      return currentTemplate.value;
+      activeTpl.value = response.data.template;
+      return activeTpl.value;
     } catch (error) {
       throw error.response?.data?.error || 'Failed to fetch template';
-    } finally {
-      loading.value = false;
-    }
+    } finally { busy.value = false; }
   }
 
   async function createTemplate(templateData) {
     try {
       const response = await api.post('/templates', templateData);
-      await fetchTemplates();
+      await loadTemplates();
       return response.data.template;
     } catch (error) {
       throw error.response?.data?.error || 'Failed to create template';
@@ -46,7 +42,7 @@ export const useTemplateStore = defineStore('templates', () => {
   async function updateTemplate(id, templateData) {
     try {
       const response = await api.put(`/templates/${id}`, templateData);
-      await fetchTemplates();
+      await loadTemplates();
       return response.data.template;
     } catch (error) {
       throw error.response?.data?.error || 'Failed to update template';
@@ -56,7 +52,7 @@ export const useTemplateStore = defineStore('templates', () => {
   async function deleteTemplate(id) {
     try {
       await api.delete(`/templates/${id}`);
-      await fetchTemplates();
+      await loadTemplates();
     } catch (error) {
       throw error.response?.data?.error || 'Failed to delete template';
     }
@@ -65,7 +61,7 @@ export const useTemplateStore = defineStore('templates', () => {
   async function addExerciseToTemplate(templateId, exerciseData) {
     try {
       const response = await api.post(`/templates/${templateId}/exercises`, exerciseData);
-      await fetchTemplate(templateId);
+      await loadTemplate(templateId);
       return response.data.exercise;
     } catch (error) {
       throw error.response?.data?.error || 'Failed to add exercise';
@@ -75,7 +71,7 @@ export const useTemplateStore = defineStore('templates', () => {
   async function updateExerciseInTemplate(templateId, exerciseId, exerciseData) {
     try {
       const response = await api.put(`/templates/${templateId}/exercises/${exerciseId}`, exerciseData);
-      await fetchTemplate(templateId);
+      await loadTemplate(templateId);
       return response.data.exercise;
     } catch (error) {
       throw error.response?.data?.error || 'Failed to update exercise';
@@ -85,18 +81,18 @@ export const useTemplateStore = defineStore('templates', () => {
   async function removeExerciseFromTemplate(templateId, exerciseId) {
     try {
       await api.delete(`/templates/${templateId}/exercises/${exerciseId}`);
-      await fetchTemplate(templateId);
+      await loadTemplate(templateId);
     } catch (error) {
       throw error.response?.data?.error || 'Failed to remove exercise';
     }
   }
 
   return {
-    templates,
-    currentTemplate,
-    loading,
-    fetchTemplates,
-    fetchTemplate,
+    templates: tplList,
+    currentTemplate: activeTpl,
+    loading: busy,
+    fetchTemplates: loadTemplates,
+    fetchTemplate: loadTemplate,
     createTemplate,
     updateTemplate,
     deleteTemplate,

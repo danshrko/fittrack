@@ -360,8 +360,8 @@ tbody tr:hover {
 }
 
 .badge-user {
-  background: #e3f2fd;
-  color: #1976d2;
+  background: #e9f1f8;
+  color: #333;
 }
 
 .btn {

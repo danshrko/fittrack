@@ -19,8 +19,8 @@
 
     <div v-else class="workout-content">
       <div v-for="(exercise, exIndex) in exercises" :key="exercise.id || exIndex" class="exercise-section">
-        <div class="exercise-header">
-          <h3>{{ exercise.name }}</h3>
+            <div class="exercise-header">
+              <h3>{{ exercise.name }}</h3>
           <div class="exercise-meta">
             <span class="exercise-type">{{ formatType(exercise.exercise_type) }}</span>
             <span v-if="exercise.exercise_type !== 'cardio' && exercise.muscle_group" class="exercise-muscle">{{ exercise.muscle_group }}</span>
@@ -28,8 +28,13 @@
           </div>
         </div>
 
+        <p v-if="exercise.notes" class="exercise-notes">{{ exercise.notes }}</p>
+
         <div class="sets-container">
-          <div v-for="(set, setIndex) in exercise.sets" :key="setIndex" class="set-row">
+          <div v-for="(set, setIndex) in exercise.sets" :key="setIndex" :class="['set-row', { completed: set.completed }]">
+            <label class="set-checkbox">
+              <input type="checkbox" v-model="set.completed" />
+            </label>
             <span class="set-number">Set {{ setIndex + 1 }}</span>
             <div class="set-inputs">
               <input
@@ -120,8 +125,8 @@ const workoutDuration = ref(0);
 const exercises = ref([]);
 const showExerciseModal = ref(false);
 const exerciseSearch = ref('');
-const sessionExercisesCache = ref([]);
-let timerInterval = null;
+const seCache = ref([]);
+let timerHandle = null;
 
 const availableExercises = computed(() => exerciseStore.exercises || []);
 const filteredAvailableExercises = computed(() => {
@@ -137,12 +142,12 @@ onMounted(async () => {
 });
 
 onUnmounted(() => {
-  if (timerInterval) {
-    clearInterval(timerInterval);
+  if (timerHandle) {
+    clearInterval(timerHandle);
   }
 });
 
-function buildSessionExerciseMap(sessionExercises) {
+function buildSessMap(sessionExercises) {
   const map = new Map();
   sessionExercises.forEach(se => {
     if (!map.has(se.exercise_id)) {
@@ -160,7 +165,7 @@ function formatType(type) {
   return type;
 }
 
-function resolveSessionExerciseId(exercise, sessionExerciseMap, usedSessionExerciseIds) {
+function resolveSessExId(exercise, sessionExerciseMap, usedSessionExerciseIds) {
   if (exercise.session_exercise_id && !usedSessionExerciseIds.has(exercise.session_exercise_id)) {
     return exercise.session_exercise_id;
   }
@@ -170,8 +175,8 @@ function resolveSessionExerciseId(exercise, sessionExerciseMap, usedSessionExerc
   return available ? available.id : null;
 }
 
-function findSessionExerciseId(exerciseId) {
-  return sessionExercisesCache.value.find(se => se.exercise_id === exerciseId)?.id || null;
+function findSessExId(exerciseId) {
+  return seCache.value.find(se => se.exercise_id === exerciseId)?.id || null;
 }
 
 async function startWorkout() {
@@ -237,14 +242,16 @@ async function startSessionWithExercises(template, lastSession) {
         name: ex.name,
         exercise_type: ex.exercise_type,
         muscle_group: ex.muscle_group,
+        notes: ex.notes || null,
         session_exercise_id: findSessionExerciseId(ex.exercise_id),
         sets: lastSets.length > 0
           ? lastSets.map(s => ({
               reps: s.reps || null,
-              weight_kg: s.weight_kg != null ? Math.round(Number(s.weight_kg)) : null,
-              duration_seconds: s.duration_seconds || null
+              weight_kg: s.weight_kg != null ? s.weight_kg : null,
+              duration_seconds: s.duration_seconds || null,
+              completed: false
             }))
-          : [{ reps: null, weight_kg: null, duration_seconds: null }]
+          : [{ reps: null, weight_kg: null, duration_seconds: null, completed: false }]
       };
     });
   }
@@ -272,7 +279,7 @@ async function startQuickWorkout() {
 }
 
 function startTimer() {
-  timerInterval = setInterval(() => {
+  timerInt = setInterval(() => {
     if (workoutStartTime.value) {
       const now = new Date();
       workoutDuration.value = Math.floor((now - workoutStartTime.value) / 1000);
@@ -294,7 +301,7 @@ async function addExercise(exercise) {
     exercise_type: exercise.exercise_type,
     muscle_group: exercise.muscle_group,
     session_exercise_id: null,
-    sets: [{ reps: null, weight_kg: null, duration_seconds: null }]
+    sets: [{ reps: null, weight_kg: null, duration_seconds: null, completed: false }]
   };
 
   if (currentSessionId.value) {
@@ -315,7 +322,8 @@ function addSet(exerciseIndex) {
   exercises.value[exerciseIndex].sets.push({
     reps: null,
     weight_kg: null,
-    duration_seconds: null
+    duration_seconds: null,
+    completed: false
   });
 }
 
@@ -328,7 +336,7 @@ async function completeWorkout() {
 
   try {
     const session = await sessionStore.fetchSession(currentSessionId.value);
-    const sessionExerciseMap = buildSessionExerciseMap(session.exercises || []);
+    const sessionExerciseMap = buildSessionMap(session.exercises || []);
     const usedSessionExerciseIds = new Set();
 
     for (let i = 0; i < exercises.value.length; i++) {
@@ -360,8 +368,8 @@ async function completeWorkout() {
     const durationMinutes = Math.floor(workoutDuration.value / 60);
     await sessionStore.completeSession(currentSessionId.value, durationMinutes);
     
-    if (timerInterval) {
-      clearInterval(timerInterval);
+    if (timerInt) {
+      clearInterval(timerInt);
     }
 
     router.push('/history');
@@ -372,8 +380,8 @@ async function completeWorkout() {
 
 function cancelWorkout() {
   if (confirm('Are you sure you want to cancel this workout?')) {
-    if (timerInterval) {
-      clearInterval(timerInterval);
+    if (timerInt) {
+      clearInterval(timerInt);
     }
     router.push('/');
   }
@@ -382,9 +390,9 @@ function cancelWorkout() {
 async function attachSessionExerciseIds() {
   if (!currentSessionId.value) return;
   const session = await sessionStore.fetchSession(currentSessionId.value);
-  sessionExercisesCache.value = session.exercises || [];
+  sesExCache.value = session.exercises || [];
 
-  const sessionExerciseMap = buildSessionExerciseMap(sessionExercisesCache.value);
+  const sessionExerciseMap = buildSessionMap(sesExCache.value);
   const used = new Set();
 
   exercises.value = exercises.value.map(exercise => ({
@@ -483,6 +491,12 @@ async function addExerciseToActiveSession(exercise) {
   gap: 0.5rem;
 }
 
+.exercise-notes {
+  margin: 0.5rem 0 1rem 0;
+  color: #666;
+  font-size: 0.9rem;
+}
+
 .exercise-type,
 .exercise-muscle {
   padding: 0.25rem 0.5rem;
@@ -503,6 +517,20 @@ async function addExerciseToActiveSession(exercise) {
   display: flex;
   align-items: center;
   gap: 0.75rem;
+}
+
+.set-row.completed {
+  background: #f6f9ff;
+  border-radius: 6px;
+  padding: 0.5rem;
+}
+
+.set-checkbox {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
 }
 
 .set-number {

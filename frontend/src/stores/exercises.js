@@ -3,38 +3,38 @@ import { ref } from 'vue';
 import api from '../services/api';
 
 export const useExerciseStore = defineStore('exercises', () => {
-  const exercises = ref([]);
-  const loading = ref(false);
+  const exRef = ref([]);
+  const busy = ref(false);
 
-  async function fetchExercises() {
-    loading.value = true;
+  async function loadExercises() {
+    busy.value = true;
     try {
       const response = await api.get('/exercises');
-      exercises.value = response.data.exercises;
-      return exercises.value;
+      exRef.value = response.data.exercises;
+      return exRef.value;
     } catch (error) {
       throw error.response?.data?.error || 'Failed to fetch exercises';
     } finally {
-      loading.value = false;
+      busy.value = false;
     }
   }
 
   async function fetchByMuscleGroup(group) {
-    loading.value = true;
+    busy.value = true;
     try {
       const response = await api.get(`/exercises/muscle/${group}`);
       return response.data.exercises;
     } catch (error) {
       throw error.response?.data?.error || 'Failed to fetch exercises';
     } finally {
-      loading.value = false;
+      busy.value = false;
     }
   }
 
   async function createExercise(exerciseData) {
     try {
       const response = await api.post('/exercises', exerciseData);
-      await fetchExercises();
+      await loadExercises();
       return response.data.exercise;
     } catch (error) {
       throw error.response?.data?.error || 'Failed to create exercise';
@@ -44,7 +44,7 @@ export const useExerciseStore = defineStore('exercises', () => {
   async function updateExercise(id, exerciseData) {
     try {
       const response = await api.put(`/exercises/${id}`, exerciseData);
-      await fetchExercises();
+      await loadExercises();
       return response.data.exercise;
     } catch (error) {
       throw error.response?.data?.error || 'Failed to update exercise';
@@ -54,16 +54,16 @@ export const useExerciseStore = defineStore('exercises', () => {
   async function deleteExercise(id) {
     try {
       await api.delete(`/exercises/${id}`);
-      await fetchExercises();
+      await loadExercises();
     } catch (error) {
       throw error.response?.data?.error || 'Failed to delete exercise';
     }
   }
 
   return {
-    exercises,
-    loading,
-    fetchExercises,
+    exercises: exRef,
+    loading: busy,
+    fetchExercises: loadExercises,
     fetchByMuscleGroup,
     createExercise,
     updateExercise,

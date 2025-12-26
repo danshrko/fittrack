@@ -33,7 +33,7 @@
                 <div v-for="set in exercise.sets" :key="set.id" class="set-detail">
                   Set {{ set.set_number }}:
                   <span v-if="set.reps"> {{ set.reps }} reps</span>
-                  <span v-if="set.weight_kg"> X {{ formatWeight(set.weight_kg) }}kg</span>
+                  <span v-if="set.weight_kg"> X {{ set.weight_kg }}kg</span>
                   <span v-if="set.duration_seconds"> {{ formatDuration(set.duration_seconds) }}</span>
                 </div>
               </div>
@@ -55,18 +55,12 @@ import { useSessionStore } from '../../stores/sessions';
 
 const sessionStore = useSessionStore();
 
-const sessions = computed(() => 
-  sessionStore.sessions.filter(s => s.date_completed).sort((a, b) => 
-    new Date(b.date_completed) - new Date(a.date_completed)
-  )
-);
-const loading = computed(() => sessionStore.loading);
-const expandedSessions = ref(new Set());
-const sessionDetails = ref({});
+const sessions = computed(() => sessionStore.sessions.filter(s => s.date_completed).sort((a, b) => new Date(b.date_completed) - new Date(a.date_completed)));
+const isLoading = computed(() => sessionStore.loading);
+const expanded = ref(new Set());
+const detailsMap = ref({});
 
-onMounted(async () => {
-  await sessionStore.fetchSessions();
-});
+onMounted(async () => { await sessionStore.fetchSessions(); });
 
 function formatDate(dateString) {
   if (!dateString) return '';
@@ -87,44 +81,34 @@ function formatDuration(seconds) {
   return `${mins}:${secs.toString().padStart(2, '0')}`;
 }
 
-function formatWeight(weight) {
-  if (weight === null || weight === undefined) return '';
-  const num = Number(weight);
-  if (Number.isNaN(num)) return '';
-  return Math.round(num);
-}
+ 
 
 async function toggleSession(sessionId) {
-  if (expandedSessions.value.has(sessionId)) {
-    expandedSessions.value.delete(sessionId);
-  } else {
-    expandedSessions.value.add(sessionId);
-    
-    if (!sessionDetails.value[sessionId]) {
-      sessionDetails.value[sessionId] = { loading: true };
-      try {
-        const session = await sessionStore.fetchSession(sessionId);
-        sessionDetails.value[sessionId] = { loading: false, session };
-      } catch (error) {
-        sessionDetails.value[sessionId] = { loading: false, error };
-        alert('Failed to load session details');
-      }
+  if (expanded.value.has(sessionId)) {
+    expanded.value.delete(sessionId);
+    return;
+  }
+
+  expanded.value.add(sessionId);
+  if (!detailsMap.value[sessionId]) {
+    detailsMap.value[sessionId] = { loading: true };
+    try {
+      const session = await sessionStore.fetchSession(sessionId);
+      detailsMap.value[sessionId] = { loading: false, session };
+    } catch (error) {
+      detailsMap.value[sessionId] = { loading: false, error };
+      alert('Failed to load session details');
     }
   }
 }
 
-function getTotalSets(session) {
-  if (!session?.exercises) return 0;
-  return session.exercises.reduce((total, ex) => total + (ex.sets?.length || 0), 0);
-}
+function getTotalSets(session) { if (!session?.exercises) return 0; return session.exercises.reduce((t, ex) => t + (ex.sets?.length || 0), 0); }
 
 function getTotalVolume(session) {
   if (!session?.exercises) return 0;
-  return session.exercises.reduce((total, ex) => {
-    const exerciseVolume = ex.sets?.reduce((exTotal, set) => {
-      return exTotal + ((set.reps || 0) * (set.weight_kg || 0));
-    }, 0) || 0;
-    return total + exerciseVolume;
+  return session.exercises.reduce((tot, ex) => {
+    const ev = ex.sets?.reduce((sTot, set) => sTot + ((set.reps || 0) * (set.weight_kg || 0)), 0) || 0;
+    return tot + ev;
   }, 0);
 }
 </script>
@@ -205,7 +189,7 @@ function getTotalVolume(session) {
 
 .session-duration {
   font-weight: 600;
-  color: #1976d2;
+  color: #1a1a1a;
 }
 
 .toggle-icon {

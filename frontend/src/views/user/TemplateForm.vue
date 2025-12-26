@@ -322,8 +322,8 @@ function formatType(type) {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: #1976d2;
-  color: white;
+  background: #f5f5f5;
+  color: #333;
   border-radius: 50%;
   font-weight: 600;
   flex-shrink: 0;

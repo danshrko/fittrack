@@ -3,33 +3,33 @@ import { ref, computed } from 'vue';
 import api from '../services/api';
 
 export const useAuthStore = defineStore('auth', () => {
-  const user = ref(JSON.parse(localStorage.getItem('user')) || null);
-  const token = ref(localStorage.getItem('token') || null);
+  const usr = ref(JSON.parse(localStorage.getItem('user')) || null);
+  const tok = ref(localStorage.getItem('token') || null);
 
-  const isAuthenticated = computed(() => !!token.value);
+  const isAuthenticated = computed(() => !!tok.value);
 
   async function login(email, password) {
     try {
       const response = await api.post('/auth/login', { email, password });
-      token.value = response.data.token;
-      user.value = response.data.user;
-      localStorage.setItem('token', token.value);
-      localStorage.setItem('user', JSON.stringify(user.value));
+      tok.value = response.data.token;
+      usr.value = response.data.user;
+      localStorage.setItem('token', tok.value);
+      localStorage.setItem('user', JSON.stringify(usr.value));
       return response.data;
     } catch (error) {
-      const apiError = error?.response?.data?.error
-      const msg = apiError || error?.message || 'Login failed'
-      throw msg
+      const apiError = error?.response?.data?.error;
+      const msg = apiError || error?.message || 'Login failed';
+      throw msg;
     }
   }
 
   async function register(name, email, password) {
     try {
       const response = await api.post('/auth/register', { name, email, password });
-      token.value = response.data.token;
-      user.value = response.data.user;
-      localStorage.setItem('token', token.value);
-      localStorage.setItem('user', JSON.stringify(user.value));
+      tok.value = response.data.token;
+      usr.value = response.data.user;
+      localStorage.setItem('token', tok.value);
+      localStorage.setItem('user', JSON.stringify(usr.value));
       return response.data;
     } catch (error) {
       throw error.response?.data?.error || 'Registration failed';
@@ -39,18 +39,18 @@ export const useAuthStore = defineStore('auth', () => {
   async function getCurrentUser() {
     try {
       const response = await api.get('/auth/me');
-      user.value = response.data.user;
-      localStorage.setItem('user', JSON.stringify(user.value));
+      usr.value = response.data.user;
+      localStorage.setItem('user', JSON.stringify(usr.value));
       return response.data.user;
     } catch (error) {
-      logout();
+      doLogout();
       throw error;
     }
   }
 
-  function logout() {
-    user.value = null;
-    token.value = null;
+  function doLogout() {
+    usr.value = null;
+    tok.value = null;
     localStorage.removeItem('token');
     localStorage.removeItem('user');
   }
@@ -78,13 +78,13 @@ export const useAuthStore = defineStore('auth', () => {
   }
 
   return {
-    user,
-    token,
+    user: usr,
+    token: tok,
     isAuthenticated,
     login,
     register,
     getCurrentUser,
-    logout,
+    logout: doLogout,
     requestPasswordReset,
     resetPassword
   };

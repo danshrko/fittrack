@@ -1,38 +1,36 @@
 import axios from 'axios';
 
-const api = axios.create({
+const apiClient = axios.create({
   baseURL: import.meta.env.VITE_API_URL || 'http://localhost:3000/api',
-  headers: {
-    'Content-Type': 'application/json'
-  }
+  headers: { 'Content-Type': 'application/json' }
 });
 
-api.interceptors.request.use(
-  (config) => {
+apiClient.interceptors.request.use(
+  (cfg) => {
     const token = localStorage.getItem('token');
     if (token) {
-      config.headers.Authorization = `Bearer ${token}`;
+      cfg.headers.Authorization = `Bearer ${token}`;
     }
-    return config;
+    return cfg;
   },
-  (error) => {
-    return Promise.reject(error);
-  }
+  (err) => Promise.reject(err)
 );
-api.interceptors.response.use(
-  (response) => response,
-  (error) => {
-    if (error.response?.status === 401) {
-      const reqUrl = error?.config?.url || ''
-      const isAuthEndpoint = ['/auth/login', '/auth/register', '/auth/forgot', '/auth/reset'].some((p) => reqUrl.includes(p))
+
+apiClient.interceptors.response.use(
+  (res) => res,
+  (err) => {
+    if (err.response?.status === 401) {
+      const reqUrl = err?.config?.url || '';
+      const authPaths = ['/auth/login', '/auth/register', '/auth/forgot', '/auth/reset'];
+      const isAuthEndpoint = authPaths.some((p) => reqUrl.includes(p));
       if (!isAuthEndpoint) {
-        localStorage.removeItem('token')
-        localStorage.removeItem('user')
-        window.location.href = '/login'
+        localStorage.removeItem('token');
+        localStorage.removeItem('user');
+        window.location.href = '/login';
       }
     }
-    return Promise.reject(error)
+    return Promise.reject(err);
   }
 );
 
-export default api;
+export default apiClient;

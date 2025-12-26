@@ -24,8 +24,9 @@ async function ensureResetTable() {
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
   `)
 }
+}
 
-function buildResetLink(token) {
+function makeResetLink(token) {
   const base = process.env.FRONTEND_URL || 'http://localhost:5173'
   return `${base}/reset-password?token=${encodeURIComponent(token)}`
 }
@@ -42,10 +43,11 @@ router.post(
       const errors = validationResult(req)
       if (!errors.isEmpty()) return res.status(400).json({ error: errors.array()[0].msg })
 
+
       const { name, email, password } = req.body
 
-      const [existing] = await pool.execute('SELECT id FROM users WHERE email = ?', [email])
-      if (existing.length > 0) return res.status(400).json({ error: 'Email already registered' })
+        const [existingRows] = await pool.execute('SELECT id FROM users WHERE email = ?', [email])
+        if (existingRows.length > 0) return res.status(400).json({ error: 'Email already registered' })
 
       const passwordHash = await bcrypt.hash(password, 10)
       const [result] = await pool.execute(
@@ -103,23 +105,24 @@ router.post('/forgot', [body('email').isEmail().withMessage('Valid email is requ
     const errors = validationResult(req)
     if (!errors.isEmpty()) return res.status(400).json({ error: errors.array()[0].msg })
 
-    const { email } = req.body
-    const [users] = await pool.execute('SELECT id, name FROM users WHERE email = ?', [email])
-    if (users.length === 0) return res.json({ message: 'If that account exists, a reset email has been sent.' })
 
-    const user = users[0]
+    const { email } = req.body
+    const [userRows] = await pool.execute('SELECT id, name FROM users WHERE email = ?', [email])
+    if (userRows.length === 0) return res.json({ message: 'If that account exists, a reset email has been sent.' })
+
+    const usr = userRows[0]
     await ensureResetTable()
     const token = crypto.randomBytes(32).toString('hex')
     const expiresAt = new Date(Date.now() + 1000 * 60 * 60)
 
-    await pool.execute('INSERT INTO password_reset_tokens (user_id, token, expires_at) VALUES (?, ?, ?)', [user.id, token, expiresAt])
-    const resetLink = buildResetLink(token)
+    await pool.execute('INSERT INTO password_reset_tokens (user_id, token, expires_at) VALUES (?, ?, ?)', [usr.id, token, expiresAt])
+    const resetLink = makeResetLink(token)
 
     try {
       await sendEmail({
-        to: email,
-        subject: 'Fittrack password reset',
-        text: `Hi ${user.name || ''},\n\nWe received a request to reset your Fittrack password.\n\nReset your password using this link (valid for 1 hour): ${resetLink}\n\nIf you didn't request this, you can ignore this email.\n`,
+      to: email,
+      subject: 'Fittrack password reset',
+      text: `Hi ${usr.name || ''},\n\nWe received a request to reset your Fittrack password.\n\nReset your password using this link (valid for 1 hour): ${resetLink}\n\nIf you didn't request this, you can ignore this email.\n`,
         html: `
           <div style="font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background:#f5f5f5; padding:24px;">
             <div style="max-width:480px; margin:0 auto; background:#ffffff; border-radius:8px; padding:24px; border:1px solid #e0e0e0;">

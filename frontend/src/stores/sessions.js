@@ -3,33 +3,33 @@ import { ref } from 'vue';
 import api from '../services/api';
 
 export const useSessionStore = defineStore('sessions', () => {
-  const sessions = ref([]);
-  const currentSession = ref(null);
-  const loading = ref(false);
+  const list = ref([]);
+  const active = ref(null);
+  const loadingState = ref(false);
 
   async function fetchSessions() {
-    loading.value = true;
+    loadingState.value = true;
     try {
       const response = await api.get('/sessions');
-      sessions.value = response.data.sessions;
-      return sessions.value;
+      list.value = response.data.sessions;
+      return list.value;
     } catch (error) {
       throw error.response?.data?.error || 'Failed to fetch sessions';
     } finally {
-      loading.value = false;
+      loadingState.value = false;
     }
   }
 
   async function fetchSession(id) {
-    loading.value = true;
+    loadingState.value = true;
     try {
       const response = await api.get(`/sessions/${id}`);
-      currentSession.value = response.data.session;
-      return currentSession.value;
+      active.value = response.data.session;
+      return active.value;
     } catch (error) {
       throw error.response?.data?.error || 'Failed to fetch session';
     } finally {
-      loading.value = false;
+      loadingState.value = false;
     }
   }
 
@@ -45,8 +45,8 @@ export const useSessionStore = defineStore('sessions', () => {
   async function startSession(sessionData) {
     try {
       const response = await api.post('/sessions/start', sessionData);
-      currentSession.value = response.data.session;
-      return currentSession.value;
+      active.value = response.data.session;
+      return active.value;
     } catch (error) {
       throw error.response?.data?.error || 'Failed to start session';
     }
@@ -100,9 +100,9 @@ export const useSessionStore = defineStore('sessions', () => {
   }
 
   return {
-    sessions,
-    currentSession,
-    loading,
+    sessions: list,
+    currentSession: active,
+    loading: loadingState,
     fetchSessions,
     fetchSession,
     fetchLastSessionForTemplate,
