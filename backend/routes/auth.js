@@ -24,7 +24,6 @@ async function ensureResetTable() {
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
   `)
 }
-}
 
 function makeResetLink(token) {
   const base = process.env.FRONTEND_URL || 'http://localhost:5173'
