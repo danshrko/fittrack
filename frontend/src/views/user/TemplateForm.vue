@@ -420,7 +420,7 @@ function formatType(type) {
   margin: 0 0 0.25rem 0;
   color: #333;
 }
-
+ 
 .exercise-option span {
   font-size: 0.875rem;
   color: #666;

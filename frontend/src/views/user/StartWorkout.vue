@@ -370,11 +370,13 @@ async function completeWorkout() {
       clearInterval(timerInterval);
     }
 
+    
     router.push('/history');
   } catch (error) {
     alert(error);
   }
 }
+
 
 function cancelWorkout() {
   if (confirm('Are you sure you want to cancel this workout?')) {
@@ -606,7 +608,7 @@ async function addExerciseToActiveSession(exercise) {
 .exercise-option:hover {
   border-color: #b0b0b0;
 }
-
+ 
 .exercise-option h4 {
   margin: 0 0 0.25rem 0;
   color: #1a1a1a;

@@ -413,13 +413,14 @@ function formatMinutes(totalMinutes) {
   gap: 1.5rem;
   margin-bottom: 3rem;
 }
-
+ 
 .stat-card {
   background: white;
   border: 1px solid #e0e0e0;
   border-radius: 4px;
   padding: 1.5rem;
 }
+
 
 .stat-value {
   font-size: 2rem;

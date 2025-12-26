@@ -161,4 +161,4 @@ async function deleteTemplate(id) {
 .btn-block {
   width: 100%;
 }
-</style>
+</style> 

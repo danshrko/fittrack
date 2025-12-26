@@ -321,11 +321,12 @@ function formatType(type) {
   align-items: center;
   gap: 1rem;
 }
-
+ 
 .filters label {
   font-weight: 500;
   color: #333;
 }
+
 
 .form-select {
   padding: 0.5rem 1rem;

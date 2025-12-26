@@ -226,6 +226,7 @@ function getTotalVolume(session) {
   gap: 1.5rem;
 }
 
+
 .exercise-detail h4 {
   margin: 0 0 0.75rem 0;
   color: #333;
@@ -255,4 +256,4 @@ function getTotalVolume(session) {
   margin: 0;
   color: #333;
 }
-</style>
+</style> 

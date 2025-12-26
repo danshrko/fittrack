@@ -136,6 +136,7 @@ async function changePassword() {
   margin: 0 auto;
 }
 
+
 .page-title {
   font-size: 1.75rem;
   margin-bottom: 1.5rem;
@@ -169,7 +170,7 @@ async function changePassword() {
   color: #c62828;
   margin: 0 0 0.75rem 0;
 }
-
+ 
 .form-actions {
   display: flex;
   justify-content: flex-end;
