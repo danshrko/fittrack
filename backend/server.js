@@ -11,34 +11,41 @@ import userRoutes from './routes/users.js';
 
 dotenv.config();
 
-const server = express();
-const port = process.env.PORT || 3000;
+const app = express();
+const PORT = process.env.PORT || 3000;
 
-server.use(cors({ origin: process.env.FRONTEND_URL || 'http://localhost:5173', credentials: true }));
-server.use(express.json());
-server.use(express.urlencoded({ extended: true }));
+app.use(cors({
+  origin: process.env.FRONTEND_URL || 'http://localhost:5173',
+  credentials: true
+}));
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
 
-server.get('/health', (req, res) => {
+app.get('/health', (req, res) => {
   res.json({ status: 'OK', message: 'Fittrack API is running' });
 });
 
-server.use('/api/auth', authRoutes);
-server.use('/api/exercises', exerciseRoutes);
-server.use('/api/templates', templateRoutes);
-server.use('/api/sessions', sessionRoutes);
-server.use('/api/stats', statsRoutes);
-server.use('/api/admin', adminRoutes);
-server.use('/api/users', userRoutes);
+app.use('/api/auth', authRoutes);
+app.use('/api/exercises', exerciseRoutes);
+app.use('/api/templates', templateRoutes);
+app.use('/api/sessions', sessionRoutes);
+app.use('/api/stats', statsRoutes);
+app.use('/api/admin', adminRoutes);
+app.use('/api/users', userRoutes);
 
-server.use((req, res) => {
+app.use((req, res) => {
   res.status(404).json({ error: 'Route not found' });
 });
 
-server.use((err, req, res, next) => {
+app.use((err, req, res, next) => {
   console.error('Error:', err);
   const message = process.env.NODE_ENV === 'development' ? err.message : 'Internal server error';
-  res.status(err.status || 500).json({ error: message, ...(process.env.NODE_ENV === 'development' && { stack: err.stack }) });
+  res.status(err.status || 500).json({ 
+    error: message,
+    ...(process.env.NODE_ENV === 'development' && { stack: err.stack })
+  });
 });
 
-server.listen(port, () => {
+app.listen(PORT, () => {
+  console.log(`Fittrack API listening on port ${PORT}`);
 });

@@ -55,12 +55,18 @@ import { useSessionStore } from '../../stores/sessions';
 
 const sessionStore = useSessionStore();
 
-const sessions = computed(() => sessionStore.sessions.filter(s => s.date_completed).sort((a, b) => new Date(b.date_completed) - new Date(a.date_completed)));
-const isLoading = computed(() => sessionStore.loading);
-const expanded = ref(new Set());
-const detailsMap = ref({});
+const sessions = computed(() => 
+  sessionStore.sessions.filter(s => s.date_completed).sort((a, b) => 
+    new Date(b.date_completed) - new Date(a.date_completed)
+  )
+);
+const loading = computed(() => sessionStore.loading);
+const expandedSessions = ref(new Set());
+const sessionDetails = ref({});
 
-onMounted(async () => { await sessionStore.fetchSessions(); });
+onMounted(async () => {
+  await sessionStore.fetchSessions();
+});
 
 function formatDate(dateString) {
   if (!dateString) return '';
@@ -84,31 +90,36 @@ function formatDuration(seconds) {
  
 
 async function toggleSession(sessionId) {
-  if (expanded.value.has(sessionId)) {
-    expanded.value.delete(sessionId);
-    return;
-  }
-
-  expanded.value.add(sessionId);
-  if (!detailsMap.value[sessionId]) {
-    detailsMap.value[sessionId] = { loading: true };
-    try {
-      const session = await sessionStore.fetchSession(sessionId);
-      detailsMap.value[sessionId] = { loading: false, session };
-    } catch (error) {
-      detailsMap.value[sessionId] = { loading: false, error };
-      alert('Failed to load session details');
+  if (expandedSessions.value.has(sessionId)) {
+    expandedSessions.value.delete(sessionId);
+  } else {
+    expandedSessions.value.add(sessionId);
+    
+    if (!sessionDetails.value[sessionId]) {
+      sessionDetails.value[sessionId] = { loading: true };
+      try {
+        const session = await sessionStore.fetchSession(sessionId);
+        sessionDetails.value[sessionId] = { loading: false, session };
+      } catch (error) {
+        sessionDetails.value[sessionId] = { loading: false, error };
+        alert('Failed to load session details');
+      }
     }
   }
 }
 
-function getTotalSets(session) { if (!session?.exercises) return 0; return session.exercises.reduce((t, ex) => t + (ex.sets?.length || 0), 0); }
+function getTotalSets(session) {
+  if (!session?.exercises) return 0;
+  return session.exercises.reduce((total, ex) => total + (ex.sets?.length || 0), 0);
+}
 
 function getTotalVolume(session) {
   if (!session?.exercises) return 0;
-  return session.exercises.reduce((tot, ex) => {
-    const ev = ex.sets?.reduce((sTot, set) => sTot + ((set.reps || 0) * (set.weight_kg || 0)), 0) || 0;
-    return tot + ev;
+  return session.exercises.reduce((total, ex) => {
+    const exerciseVolume = ex.sets?.reduce((exTotal, set) => {
+      return exTotal + ((set.reps || 0) * (set.weight_kg || 0));
+    }, 0) || 0;
+    return total + exerciseVolume;
   }, 0);
 }
 </script>

@@ -18,19 +18,18 @@ const mailer = nodemailer.createTransport({
   }
 });
 
-async function getUsers() {
-  const { data } = await axios.get(
-    `${apiBase}/admin/users`,
-    { headers: { Authorization: `Bearer ${adminToken}` } }
-  );
+async function fetchUsers() {
+  const { data } = await axios.get(`${apiBase}/admin/users`, {
+    headers: { Authorization: `Bearer ${adminToken}` }
+  });
   return data.users || [];
 }
 
-async function getWeeklySummary(userId) {
-  const { data } = await axios.get(
-    `${apiBase}/stats/weekly-summary`,
-    { headers: { Authorization: `Bearer ${adminToken}` }, params: { user_id: userId } }
-  );
+async function fetchWeeklySummary(userId) {
+  const { data } = await axios.get(`${apiBase}/stats/weekly-summary`, {
+    headers: { Authorization: `Bearer ${adminToken}` },
+    params: { user_id: userId }
+  });
   return data;
 }
 
@@ -38,9 +37,7 @@ async function sendSummaryEmail(user, stats) {
   const subject = 'Your Weekly Fittrack Summary';
   const html = `
     <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
-      <h1 style="background:#1976d2; color:#fff; padding:16px;">
-        Your Weekly Fittrack Summary
-      </h1>
+      <h1 style="background:#1976d2; color:#fff; padding:16px;">Your Weekly Fittrack Summary</h1>
       <p>Hi ${user.name || 'there'}, here is your past week:</p>
       <ul>
         <li><strong>Workouts:</strong> ${stats.workoutsCount}</li>
@@ -67,11 +64,11 @@ async function runWeeklyReport() {
     return;
   }
 
-  const users = await getUsers();
+  const users = await fetchUsers();
 
   for (const user of users) {
     try {
-      const stats = await getWeeklySummary(user.id);
+      const stats = await fetchWeeklySummary(user.id);
       await sendSummaryEmail(user, stats);
       console.log(`Weekly summary sent to ${user.email}`);
     } catch (err) {
@@ -81,3 +78,4 @@ async function runWeeklyReport() {
 }
 
 cron.schedule('* * * * *', runWeeklyReport);
+//cron.schedule('0 20 * * 0', runWeeklyReport); sunday at 8pm

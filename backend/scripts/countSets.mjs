@@ -1,9 +1,9 @@
 import pool from '../config/db.js';
 
-async function doRun() {
+async function run() {
   try {
-    const [r] = await pool.execute('SELECT COUNT(*) as c FROM exercise_sets');
-    console.log('total sets:', r[0].c);
+    const [rows] = await pool.execute('SELECT COUNT(*) as c FROM exercise_sets');
+    console.log('total sets:', rows[0].c);
   } catch (err) {
     console.error('Query error:', err);
   } finally {
@@ -11,4 +11,4 @@ async function doRun() {
   }
 }
 
-doRun().then(() => process.exit());
+run().then(() => process.exit());

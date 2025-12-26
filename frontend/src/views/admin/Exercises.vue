@@ -2,7 +2,7 @@
   <div class="admin-exercises-page">
     <div class="page-header">
       <h1 class="page-title">Manage Global Exercises</h1>
-      <button @click="createModal = true" class="btn btn-primary">
+      <button @click="showCreateModal = true" class="btn btn-primary">
         + Add Global Exercise
       </button>
     </div>
@@ -29,18 +29,18 @@
       </div>
     </div>
 
-    <div v-if="createModal || editEx" class="modal-overlay" @click="closeModal">
+    <div v-if="showCreateModal || editingExercise" class="modal-overlay" @click="closeModal">
       <div class="modal-content" @click.stop>
-        <h2>{{ editEx ? 'Edit Global Exercise' : 'Create Global Exercise' }}</h2>
+        <h2>{{ editingExercise ? 'Edit Global Exercise' : 'Create Global Exercise' }}</h2>
         <form @submit.prevent="saveExercise">
           <div class="form-group">
             <label>Name</label>
-            <input v-model="formExercise.name" type="text" required class="form-input" />
+            <input v-model="exerciseForm.name" type="text" required class="form-input" />
           </div>
 
           <div class="form-group">
             <label>Muscle Group</label>
-            <select v-model="formExercise.muscle_group" required class="form-input">
+            <select v-model="exerciseForm.muscle_group" required class="form-input">
               <option value="">Select...</option>
               <option value="Chest">Chest</option>
               <option value="Back">Back</option>
@@ -54,7 +54,7 @@
 
           <div class="form-group" v-if="showExerciseType">
             <label>Exercise Type</label>
-            <select v-model="formExercise.exercise_type" required class="form-input">
+            <select v-model="exerciseForm.exercise_type" required class="form-input">
               <option value="">Select...</option>
               <option value="strength">Weights</option>
               <option value="cardio">Cardio</option>
@@ -77,11 +77,15 @@ import { ref, computed, onMounted, watch } from 'vue';
 import api from '../../services/api';
 
 const loading = ref(false);
-const exercs = ref([]);
-const createModal = ref(false);
-const editEx = ref(null);
+const exercises = ref([]);
+const showCreateModal = ref(false);
+const editingExercise = ref(null);
 
-const formExercise = ref({ name: '', muscle_group: '', exercise_type: '' });
+const exerciseForm = ref({
+  name: '',
+  muscle_group: '',
+  exercise_type: ''
+});
 
 const showExerciseType = computed(() => exerciseForm.value.muscle_group !== 'Cardio');
 
@@ -95,44 +99,61 @@ watch(() => exerciseForm.value.muscle_group, (val) => {
 
 const groupedExercises = computed(() => {
   const groups = {};
-  exercs.value.forEach(ex => {
-    if (!groups[ex.muscle_group]) groups[ex.muscle_group] = [];
+  exercises.value.forEach(ex => {
+    if (!groups[ex.muscle_group]) {
+      groups[ex.muscle_group] = [];
+    }
     groups[ex.muscle_group].push(ex);
   });
-  return Object.keys(groups).map(mg => ({ muscle_group: mg, exercises: groups[mg] }));
+  return Object.keys(groups).map(mg => ({
+    muscle_group: mg,
+    exercises: groups[mg]
+  }));
 });
 
-onMounted(async () => { await fetchExercises(); });
+onMounted(async () => {
+  await loadExercises();
+});
 
-async function fetchExercises() {
+async function loadExercises() {
   loading.value = true;
   try {
     const response = await api.get('/admin/exercises');
-    exercs.value = response.data.exercises;
+    exercises.value = response.data.exercises;
   } catch (error) {
     alert('Failed to load exercises');
-  } finally { loading.value = false; }
+  } finally {
+    loading.value = false;
+  }
 }
 
 function editExercise(exercise) {
-  editEx.value = exercise;
-  formExercise.value = { name: exercise.name, muscle_group: exercise.muscle_group, exercise_type: exercise.exercise_type };
+  editingExercise.value = exercise;
+  exerciseForm.value = {
+    name: exercise.name,
+    muscle_group: exercise.muscle_group,
+    exercise_type: exercise.exercise_type
+  };
 }
 
 function closeModal() {
-  createModal.value = false;
-  editEx.value = null;
-  formExercise.value = { name: '', muscle_group: '', exercise_type: '' };
+  showCreateModal.value = false;
+  editingExercise.value = null;
+  exerciseForm.value = {
+    name: '',
+    muscle_group: '',
+    exercise_type: ''
+  };
 }
 
 async function saveExercise() {
   try {
-    if (editEx.value) {
-      await api.put(`/admin/exercises/${editEx.value.id}`, formExercise.value);
+    if (editingExercise.value) {
+      await api.put(`/admin/exercises/${editingExercise.value.id}`, exerciseForm.value);
     } else {
-      await api.post('/admin/exercises', formExercise.value);
+      await api.post('/admin/exercises', exerciseForm.value);
     }
-    await fetchExercises();
+    await loadExercises();
     closeModal();
   } catch (error) {
     alert(error.response?.data?.error || 'Failed to save exercise');
@@ -146,7 +167,7 @@ async function deleteExercise(id) {
 
   try {
     await api.delete(`/admin/exercises/${id}`);
-    await fetchExercises();
+    await loadExercises();
   } catch (error) {
     alert(error.response?.data?.error || 'Failed to delete exercise');
   }
@@ -263,3 +284,4 @@ function formatType(type) {
   margin-top: 1.5rem;
 }
 </style>
+

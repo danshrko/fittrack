@@ -125,8 +125,8 @@ const workoutDuration = ref(0);
 const exercises = ref([]);
 const showExerciseModal = ref(false);
 const exerciseSearch = ref('');
-const seCache = ref([]);
-let timerHandle = null;
+const sessionExercisesCache = ref([]);
+let timerInterval = null;
 
 const availableExercises = computed(() => exerciseStore.exercises || []);
 const filteredAvailableExercises = computed(() => {
@@ -142,12 +142,12 @@ onMounted(async () => {
 });
 
 onUnmounted(() => {
-  if (timerHandle) {
-    clearInterval(timerHandle);
+  if (timerInterval) {
+    clearInterval(timerInterval);
   }
 });
 
-function buildSessMap(sessionExercises) {
+function buildSessionExerciseMap(sessionExercises) {
   const map = new Map();
   sessionExercises.forEach(se => {
     if (!map.has(se.exercise_id)) {
@@ -165,7 +165,7 @@ function formatType(type) {
   return type;
 }
 
-function resolveSessExId(exercise, sessionExerciseMap, usedSessionExerciseIds) {
+function resolveSessionExerciseId(exercise, sessionExerciseMap, usedSessionExerciseIds) {
   if (exercise.session_exercise_id && !usedSessionExerciseIds.has(exercise.session_exercise_id)) {
     return exercise.session_exercise_id;
   }
@@ -175,8 +175,8 @@ function resolveSessExId(exercise, sessionExerciseMap, usedSessionExerciseIds) {
   return available ? available.id : null;
 }
 
-function findSessExId(exerciseId) {
-  return seCache.value.find(se => se.exercise_id === exerciseId)?.id || null;
+function findSessionExerciseId(exerciseId) {
+  return sessionExercisesCache.value.find(se => se.exercise_id === exerciseId)?.id || null;
 }
 
 async function startWorkout() {
@@ -279,7 +279,7 @@ async function startQuickWorkout() {
 }
 
 function startTimer() {
-  timerInt = setInterval(() => {
+  timerInterval = setInterval(() => {
     if (workoutStartTime.value) {
       const now = new Date();
       workoutDuration.value = Math.floor((now - workoutStartTime.value) / 1000);
@@ -336,7 +336,7 @@ async function completeWorkout() {
 
   try {
     const session = await sessionStore.fetchSession(currentSessionId.value);
-    const sessionExerciseMap = buildSessionMap(session.exercises || []);
+    const sessionExerciseMap = buildSessionExerciseMap(session.exercises || []);
     const usedSessionExerciseIds = new Set();
 
     for (let i = 0; i < exercises.value.length; i++) {
@@ -368,8 +368,8 @@ async function completeWorkout() {
     const durationMinutes = Math.floor(workoutDuration.value / 60);
     await sessionStore.completeSession(currentSessionId.value, durationMinutes);
     
-    if (timerInt) {
-      clearInterval(timerInt);
+    if (timerInterval) {
+      clearInterval(timerInterval);
     }
 
     router.push('/history');
@@ -380,8 +380,8 @@ async function completeWorkout() {
 
 function cancelWorkout() {
   if (confirm('Are you sure you want to cancel this workout?')) {
-    if (timerInt) {
-      clearInterval(timerInt);
+    if (timerInterval) {
+      clearInterval(timerInterval);
     }
     router.push('/');
   }
@@ -390,9 +390,9 @@ function cancelWorkout() {
 async function attachSessionExerciseIds() {
   if (!currentSessionId.value) return;
   const session = await sessionStore.fetchSession(currentSessionId.value);
-  sesExCache.value = session.exercises || [];
+  sessionExercisesCache.value = session.exercises || [];
 
-  const sessionExerciseMap = buildSessionMap(sesExCache.value);
+  const sessionExerciseMap = buildSessionExerciseMap(sessionExercisesCache.value);
   const used = new Set();
 
   exercises.value = exercises.value.map(exercise => ({

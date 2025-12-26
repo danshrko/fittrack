@@ -7,7 +7,7 @@ const router = express.Router();
 
 router.get('/', authenticate, async (req, res) => {
   try {
-    const [sessRows] = await pool.execute(
+    const [sessions] = await pool.execute(
       `SELECT id, template_id, name, date_started, date_completed, duration_minutes, notes, created_at
        FROM workout_sessions
        WHERE user_id = ?
@@ -15,7 +15,7 @@ router.get('/', authenticate, async (req, res) => {
       [req.user.id]
     );
 
-    res.json({ sessions: sessRows });
+    res.json({ sessions });
   } catch (error) {
     console.error('Get sessions error:', error);
     res.status(500).json({ error: 'Server error' });
@@ -26,16 +26,16 @@ router.get('/:id', authenticate, async (req, res) => {
   try {
     const { id } = req.params;
 
-    const [sessRows] = await pool.execute(
+    const [sessions] = await pool.execute(
       'SELECT id, template_id, name, date_started, date_completed, duration_minutes, notes FROM workout_sessions WHERE id = ? AND user_id = ?',
       [id, req.user.id]
     );
 
-    if (sessRows.length === 0) {
+    if (sessions.length === 0) {
       return res.status(404).json({ error: 'Session not found' });
     }
 
-    const session = sessRows[0];
+    const session = sessions[0];
 
     const [exercises] = await pool.execute(
       `SELECT se.id, se.order_index, se.notes,
@@ -71,7 +71,7 @@ router.get('/template/:id/last', authenticate, async (req, res) => {
   try {
     const { id } = req.params;
 
-    const [sessRows] = await pool.execute(
+    const [sessions] = await pool.execute(
       `SELECT id FROM workout_sessions
        WHERE user_id = ? AND template_id = ? AND date_completed IS NOT NULL
        ORDER BY date_completed DESC
@@ -79,11 +79,11 @@ router.get('/template/:id/last', authenticate, async (req, res) => {
       [req.user.id, id]
     );
 
-    if (sessRows.length === 0) {
+    if (sessions.length === 0) {
       return res.json({ lastSession: null });
     }
 
-    const sessionId = sessRows[0].id;
+    const sessionId = sessions[0].id;
 
     const [exercises] = await pool.execute(
       `SELECT se.id, se.exercise_id, e.name, e.exercise_type
@@ -143,12 +143,15 @@ router.post('/start', authenticate, [
       }
     }
 
-    const [sessRows2] = await pool.execute(
+    const [sessions] = await pool.execute(
       'SELECT id, template_id, name, date_started, date_completed, duration_minutes, notes FROM workout_sessions WHERE id = ?',
       [sessionId]
     );
 
-    res.status(201).json({ message: 'Workout session started', session: sessRows2[0] });
+    res.status(201).json({
+      message: 'Workout session started',
+      session: sessions[0]
+    });
   } catch (error) {
     console.error('Start session error:', error);
     res.status(500).json({ error: 'Server error' });
@@ -167,16 +170,16 @@ router.post('/:id/exercises', authenticate, [
     const { id } = req.params;
     const { exercise_id, notes } = req.body;
 
-    const [sessCheck] = await pool.execute(
+    const [sessions] = await pool.execute(
       'SELECT id, date_completed FROM workout_sessions WHERE id = ? AND user_id = ?',
       [id, req.user.id]
     );
 
-    if (sessCheck.length === 0) {
+    if (sessions.length === 0) {
       return res.status(404).json({ error: 'Session not found' });
     }
 
-    if (sessCheck[0].date_completed) {
+    if (sessions[0].date_completed) {
       return res.status(400).json({ error: 'Cannot modify a completed session' });
     }
 
@@ -222,12 +225,12 @@ router.post('/:id/complete', authenticate, [
     const { id } = req.params;
     const { duration_minutes } = req.body;
 
-    const [existingRows] = await pool.execute(
+    const [existing] = await pool.execute(
       'SELECT id FROM workout_sessions WHERE id = ? AND user_id = ?',
       [id, req.user.id]
     );
 
-    if (existingRows.length === 0) {
+    if (existing.length === 0) {
       return res.status(404).json({ error: 'Session not found' });
     }
 
@@ -244,26 +247,26 @@ router.post('/:id/complete', authenticate, [
        GROUP BY se.exercise_id`,
       [id]
     );
-    for (const ex of sessionExercises) {
-      if (!ex.max_weight) continue;
+      for (const ex of sessionExercises) {
+        if (!ex.max_weight) continue;
 
-      const [existingPR] = await pool.execute(
-        'SELECT id, max_weight FROM personal_records WHERE user_id = ? AND exercise_id = ?',
-        [req.user.id, ex.exercise_id]
-      );
+        const [existingPR] = await pool.execute(
+          'SELECT id, max_weight FROM personal_records WHERE user_id = ? AND exercise_id = ?',
+          [req.user.id, ex.exercise_id]
+        );
 
-      if (existingPR.length === 0) {
-        await pool.execute(
-          'INSERT INTO personal_records (user_id, exercise_id, max_weight, achieved_at, session_id) VALUES (?, ?, ?, NOW(), ?)',
-          [req.user.id, ex.exercise_id, ex.max_weight, id]
-        );
-      } else if (parseFloat(ex.max_weight) > parseFloat(existingPR[0].max_weight)) {
-        await pool.execute(
-          'UPDATE personal_records SET max_weight = ?, achieved_at = NOW(), session_id = ? WHERE id = ?',
-          [ex.max_weight, id, existingPR[0].id]
-        );
+        if (existingPR.length === 0) {
+          await pool.execute(
+            'INSERT INTO personal_records (user_id, exercise_id, max_weight, achieved_at, session_id) VALUES (?, ?, ?, NOW(), ?)',
+            [req.user.id, ex.exercise_id, ex.max_weight, id]
+          );
+        } else if (parseFloat(ex.max_weight) > parseFloat(existingPR[0].max_weight)) {
+          await pool.execute(
+            'UPDATE personal_records SET max_weight = ?, achieved_at = NOW(), session_id = ? WHERE id = ?',
+            [ex.max_weight, id, existingPR[0].id]
+          );
+        }
       }
-    }
 
     res.json({ message: 'Workout completed successfully' });
   } catch (error) {
@@ -285,12 +288,12 @@ router.post('/:id/sets', authenticate, [
     const { id } = req.params;
     const { session_exercise_id, set_number, reps, weight_kg, duration_seconds, notes } = req.body;
 
-    const [sessRows3] = await pool.execute(
+    const [sessions] = await pool.execute(
       'SELECT id FROM workout_sessions WHERE id = ? AND user_id = ?',
       [id, req.user.id]
     );
 
-    if (sessRows3.length === 0) {
+    if (sessions.length === 0) {
       return res.status(404).json({ error: 'Session not found' });
     }
 
@@ -308,12 +311,15 @@ router.post('/:id/sets', authenticate, [
       [session_exercise_id, set_number, reps || null, weight_kg || null, duration_seconds || null, notes || null]
     );
 
-    const [setsRows] = await pool.execute(
+    const [sets] = await pool.execute(
       'SELECT id, set_number, reps, weight_kg, duration_seconds, notes FROM exercise_sets WHERE id = ?',
       [result.insertId]
     );
 
-    res.status(201).json({ message: 'Set logged', set: setsRows[0] });
+    res.status(201).json({
+      message: 'Set logged',
+      set: sets[0]
+    });
   } catch (error) {
     console.error('Log set error:', error);
     res.status(500).json({ error: 'Server error' });
@@ -332,14 +338,15 @@ router.put('/sets/:setId', authenticate, [
     const { setId } = req.params;
     const { set_number, reps, weight_kg, duration_seconds, notes } = req.body;
 
-    const [setRows] = await pool.execute(
+    const [sets] = await pool.execute(
       `SELECT es.id FROM exercise_sets es
        JOIN session_exercises se ON es.session_exercise_id = se.id
        JOIN workout_sessions ws ON se.session_id = ws.id
        WHERE es.id = ? AND ws.user_id = ?`,
       [setId, req.user.id]
     );
-    if (setRows.length === 0) {
+
+    if (sets.length === 0) {
       return res.status(404).json({ error: 'Set not found' });
     }
 
@@ -353,7 +360,10 @@ router.put('/sets/:setId', authenticate, [
       [setId]
     );
 
-    res.json({ message: 'Set updated', set: updatedSets[0] });
+    res.json({
+      message: 'Set updated',
+      set: updatedSets[0]
+    });
   } catch (error) {
     console.error('Update set error:', error);
     res.status(500).json({ error: 'Server error' });
@@ -364,14 +374,15 @@ router.delete('/sets/:setId', authenticate, async (req, res) => {
   try {
     const { setId } = req.params;
 
-    const [setRows2] = await pool.execute(
+    const [sets] = await pool.execute(
       `SELECT es.id FROM exercise_sets es
        JOIN session_exercises se ON es.session_exercise_id = se.id
        JOIN workout_sessions ws ON se.session_id = ws.id
        WHERE es.id = ? AND ws.user_id = ?`,
       [setId, req.user.id]
     );
-    if (setRows2.length === 0) {
+
+    if (sets.length === 0) {
       return res.status(404).json({ error: 'Set not found' });
     }
 
@@ -385,3 +396,4 @@ router.delete('/sets/:setId', authenticate, async (req, res) => {
 });
 
 export default router;
+

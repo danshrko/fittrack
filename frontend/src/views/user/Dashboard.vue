@@ -83,7 +83,7 @@
               <div :class="['day-number', { 'workout-day': isWorkoutDay(cell.dateStr) }]">
                 {{ cell.day }}
               </div>
-              <span v-if="cell.dateStr === todayKey" class="today-dot" aria-hidden="true"></span>
+              <span v-if="cell.dateStr === todayYMD" class="today-dot" aria-hidden="true"></span>
             </div>
           </div>
         </div>
@@ -146,13 +146,13 @@ const totalMinutesEver = ref(0);
 const weekdays = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
 
 const today = new Date();
-const dispYear = ref(today.getFullYear());
-const dispMonth = ref(today.getMonth());
-const todayKey = fmtYMD(today);
+const displayYear = ref(today.getFullYear());
+const displayMonth = ref(today.getMonth());
+const todayYMD = formatYMD(today);
 
 const monthCells = computed(() => {
-  const year = dispYear.value;
-  const month = dispMonth.value;
+  const year = displayYear.value;
+  const month = displayMonth.value;
   const first = new Date(year, month, 1);
   const firstWeekday = first.getDay();
   const leadingEmpty = (firstWeekday + 6) % 7;
@@ -165,14 +165,14 @@ const monthCells = computed(() => {
 
   for (let d = 1; d <= daysInMonth; d++) {
     const dt = new Date(year, month, d);
-    const dateStr = fmtYMD(dt);
+    const dateStr = formatYMD(dt);
     cells.push({ key: `d-${d}`, day: d, dateStr });
   }
 
   return cells;
 });
 
-function fmtYMD(date) {
+function formatYMD(date) {
   const y = date.getFullYear();
   const m = (date.getMonth() + 1).toString().padStart(2, '0');
   const d = date.getDate().toString().padStart(2, '0');
@@ -180,8 +180,8 @@ function fmtYMD(date) {
 }
 
 function updateMonthStats(sessions) {
-  const year = dispYear.value;
-  const month = dispMonth.value;
+  const year = displayYear.value;
+  const month = displayMonth.value;
   const monthStart = new Date(year, month, 1);
   const monthEnd = new Date(year, month + 1, 0, 23, 59, 59, 999);
 
@@ -203,7 +203,7 @@ function updateMonthStats(sessions) {
 
   const seenDays = new Set();
   for (let i = 0; i < inMonth.length; i++) {
-    seenDays.add(fmtYMD(new Date(inMonth[i].date_completed)));
+    seenDays.add(formatYMD(new Date(inMonth[i].date_completed)));
   }
   activeDaysThisMonth.value = seenDays.size;
 
@@ -217,8 +217,8 @@ function updateMonthStats(sessions) {
   let maxDaily = 0;
   let current = 0;
   for (let d = 1; d <= daysInMonth; d++) {
-    const ds = fmtYMD(new Date(year, month, d));
-    if (workoutDays.value.has(ds)) {
+    const ds = formatYMD(new Date(year, month, d));
+    if (workoutDatesSet.value.has(ds)) {
       current += 1;
       if (current > maxDaily) maxDaily = current;
     } else {
@@ -235,7 +235,7 @@ function updateMonthStats(sessions) {
     const wd = d.getDay();
     const off = (wd + 6) % 7;
     d.setDate(d.getDate() - off);
-    weekStarts.add(fmtYMD(d));
+    weekStarts.add(formatYMD(d));
   }
 
   let streak = 0;
@@ -245,7 +245,7 @@ function updateMonthStats(sessions) {
   const toff = (twd + 6) % 7;
   todayStart.setDate(todayStart.getDate() - toff);
   const cur = new Date(todayStart);
-  while (weekStarts.has(fmtYMD(cur))) {
+  while (weekStarts.has(formatYMD(cur))) {
     streak += 1;
     cur.setDate(cur.getDate() - 7);
   }
@@ -265,7 +265,7 @@ async function fetchMonthlyVolume() {
     if (!response.ok) return;
     const data = await response.json();
 
-    const monthKey = `${dispYear.value}-${(dispMonth.value + 1).toString().padStart(2, '0')}`;
+    const monthKey = `${displayYear.value}-${(displayMonth.value + 1).toString().padStart(2, '0')}`;
     const found = (data.monthlyVolume || []).find(m => m.month === monthKey);
     monthlyVolume.value = found ? Number(found.volume || 0) : 0;
   } catch (err) {
@@ -275,10 +275,10 @@ async function fetchMonthlyVolume() {
 
 function isWorkoutDay(dateStr) {
   if (!dateStr) return false;
-  return workoutDays.value.has(dateStr);
+  return workoutDatesSet.value.has(dateStr);
 }
 
-const workoutDays = ref(new Set());
+const workoutDatesSet = ref(new Set());
 
 onMounted(async () => {
   try {
@@ -312,9 +312,9 @@ onMounted(async () => {
       const s = sessions[i];
       if (!s.date_completed) continue;
       const d = new Date(s.date_completed);
-      datesSet.add(fmtYMD(d));
+      datesSet.add(formatYMD(d));
     }
-    workoutDays.value = datesSet;
+    workoutDatesSet.value = datesSet;
 
     updateMonthStats(sessions);
     await fetchMonthlyVolume();
@@ -325,8 +325,8 @@ onMounted(async () => {
     }
     totalMinutesEver.value = totalEver;
 
-    const monthKey = `${dispYear.value}-${(dispMonth.value + 1).toString().padStart(2, '0')}`;
-    const monthSessions = sessions.filter(s => fmtYMD(new Date(s.date_completed)).startsWith(monthKey));
+    const monthKey = `${displayYear.value}-${(displayMonth.value + 1).toString().padStart(2, '0')}`;
+    const monthSessions = sessions.filter(s => formatYMD(new Date(s.date_completed)).startsWith(monthKey));
     try {
       let totalSets = 0;
       for (let i = 0; i < monthSessions.length; i++) {

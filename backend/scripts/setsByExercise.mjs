@@ -1,8 +1,8 @@
 import pool from '../config/db.js';
 
-async function doRun(uId = 1) {
+async function run(userId = 1) {
   try {
-    const [r] = await pool.execute(
+    const [rows] = await pool.execute(
       `SELECT se.exercise_id, COUNT(*) as count
        FROM exercise_sets es
        JOIN session_exercises se ON es.session_exercise_id = se.id
@@ -10,9 +10,9 @@ async function doRun(uId = 1) {
        WHERE ws.user_id = ?
        GROUP BY se.exercise_id
        ORDER BY count DESC`,
-      [uId]
+      [userId]
     );
-    console.dir(r, { depth: null });
+    console.dir(rows, { depth: null });
   } catch (err) {
     console.error('Query error:', err);
   } finally {
@@ -21,4 +21,4 @@ async function doRun(uId = 1) {
 }
 
 const args = process.argv.slice(2).map(a => Number(a));
-doRun(args[0] || 1).then(() => process.exit());
+run(args[0] || 1).then(() => process.exit());
