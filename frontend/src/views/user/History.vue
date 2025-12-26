@@ -82,9 +82,9 @@ function formatDate(dateString) {
 }
 
 function formatDuration(seconds) {
-  const mins = Math.floor(seconds / 60);
-  const secs = seconds % 60;
-  return `${mins}:${secs.toString().padStart(2, '0')}`;
+  if (seconds == null) return '';
+  const mins = Math.round(Number(seconds) / 60);
+  return `${mins} min`;
 }
 
  

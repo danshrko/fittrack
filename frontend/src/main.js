@@ -7,6 +7,8 @@ import './style.css';
 const app = createApp(App);
 const pinia = createPinia();
 
+console.log('App starting...');
+
 app.use(pinia);
 app.use(router);
 

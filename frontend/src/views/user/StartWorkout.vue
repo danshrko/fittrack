@@ -38,10 +38,10 @@
             <span class="set-number">Set {{ setIndex + 1 }}</span>
             <div class="set-inputs">
               <input
-                v-if="exercise.exercise_type !== 'cardio'"
-                v-model.number="set.reps"
+                v-if="exercise.exercise_type === 'cardio'"
+                v-model.number="set.duration_minutes"
                 type="number"
-                placeholder="Reps"
+                placeholder="Duration (min)"
                 class="form-input set-input"
                 min="0"
               />
@@ -54,14 +54,7 @@
                 class="form-input set-input"
                 min="0"
               />
-              <input
-                v-if="exercise.exercise_type === 'cardio'"
-                v-model.number="set.duration_seconds"
-                type="number"
-                placeholder="Duration (sec)"
-                class="form-input set-input"
-                min="0"
-              />
+              
             </div>
             <button @click="removeSet(exIndex, setIndex)" class="btn btn-sm btn-danger">Remove</button>
           </div>
@@ -248,10 +241,10 @@ async function startSessionWithExercises(template, lastSession) {
           ? lastSets.map(s => ({
               reps: s.reps || null,
               weight_kg: s.weight_kg != null ? s.weight_kg : null,
-              duration_seconds: s.duration_seconds || null,
+              duration_minutes: s.duration_seconds != null ? Math.round(s.duration_seconds / 60) : null,
               completed: false
             }))
-          : [{ reps: null, weight_kg: null, duration_seconds: null, completed: false }]
+          : [{ reps: null, weight_kg: null, duration_minutes: null, completed: false }]
       };
     });
   }
@@ -301,7 +294,7 @@ async function addExercise(exercise) {
     exercise_type: exercise.exercise_type,
     muscle_group: exercise.muscle_group,
     session_exercise_id: null,
-    sets: [{ reps: null, weight_kg: null, duration_seconds: null, completed: false }]
+      sets: [{ reps: null, weight_kg: null, duration_minutes: null, completed: false }]
   };
 
   if (currentSessionId.value) {
@@ -322,7 +315,7 @@ function addSet(exerciseIndex) {
   exercises.value[exerciseIndex].sets.push({
     reps: null,
     weight_kg: null,
-    duration_seconds: null,
+    duration_minutes: null,
     completed: false
   });
 }
@@ -353,13 +346,18 @@ async function completeWorkout() {
       for (let setIndex = 0; setIndex < exercise.sets.length; setIndex++) {
         const set = exercise.sets[setIndex];
 
-        if (set.reps || set.weight_kg || set.duration_seconds) {
+        const hasDuration = set.duration_minutes != null || set.duration_seconds != null;
+        if (set.reps || set.weight_kg || hasDuration) {
+          const durationSeconds = set.duration_minutes != null
+            ? Math.round(set.duration_minutes * 60)
+            : (set.duration_seconds != null ? set.duration_seconds : null);
+
           await sessionStore.logSet(currentSessionId.value, {
             session_exercise_id: sessionExerciseId,
             set_number: setIndex + 1,
             reps: set.reps || null,
             weight_kg: set.weight_kg || null,
-            duration_seconds: set.duration_seconds || null
+            duration_seconds: durationSeconds
           });
         }
       }

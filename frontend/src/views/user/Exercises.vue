@@ -103,11 +103,14 @@
               <ul>
                 <li v-for="(s, idx) in group.sets" :key="group.date + '-' + idx">
                   <div class="history-row">
-                    <div class="history-row-main">Set {{ s.set_number }} — {{ s.reps }} reps</div>
-                            <div class="history-row-meta">
-                            <span v-if="s.weight_kg !== null">{{ s.weight_kg }} kg</span>
-                            <span v-if="s.duration_seconds !== null"> • {{ secondsToMinutes(s.duration_seconds) }}m</span>
-                          </div>
+                    <div class="history-row-main">
+                      Set {{ s.set_number }}
+                      <template v-if="s.duration_seconds !== null">: {{ formatSecondsAsMinutes(s.duration_seconds) }}min</template>
+                      <template v-else> — {{ s.reps }} reps</template>
+                    </div>
+                    <div class="history-row-meta">
+                      <span v-if="s.weight_kg !== null">{{ s.weight_kg }} kg</span>
+                    </div>
                   </div>
                 </li>
               </ul>
@@ -144,9 +147,10 @@ const exerciseForm = ref({
   exercise_type: ''
 });
 
-function secondsToMinutes(sec) {
-  if (!sec && sec !== 0) return '';
-  return Math.round(Number(sec) / 60);
+function formatSecondsAsMinutes(sec) {
+  if (sec == null) return '';
+  const s = Number(sec) || 0;
+  return Math.round(s / 60);
 }
 
 const showExerciseType = computed(() => exerciseForm.value.muscle_group !== 'Cardio');

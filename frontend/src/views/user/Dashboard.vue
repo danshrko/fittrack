@@ -25,7 +25,7 @@
               <div class="overview-label">Workouts this week</div>
             </div>
             <div class="overview-item">
-              <div class="overview-value">{{ avgDurationThisWeek }}m</div>
+              <div class="overview-value">{{ avgDurationThisWeek }}min</div>
               <div class="overview-label">Avg duration this week</div>
             </div>
           </div>
@@ -389,8 +389,8 @@ function formatMinutes(totalMinutes) {
   const mins = Number(totalMinutes) || 0;
   const hours = Math.floor(mins / 60);
   const rem = mins % 60;
-  if (hours > 0) return `${hours}h ${rem}m`;
-  return `${rem}m`;
+  if (hours > 0) return `${hours}h ${rem}min`;
+  return `${rem}min`;
 }
 </script>
 

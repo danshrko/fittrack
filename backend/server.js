@@ -27,6 +27,7 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 app.get('/health', (req, res) => {
+  console.log('health check ping');
   res.json({ status: 'OK', message: 'Fittrack API is running' });
 });
 
@@ -64,5 +65,4 @@ app.use((err, req, res, next) => {
 });
 
 app.listen(PORT, () => {
-  console.log(`Server listening on port ${PORT}`);
 });

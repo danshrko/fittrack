@@ -80,6 +80,9 @@ const passwordSaving = ref(false);
 const passwordMessage = ref('');
 const passwordError = ref('');
 
+
+console.log('Profile component loaded');
+
 async function saveProfile() {
   if (!form.value.name.trim() || !form.value.email.trim()) {
     error.value = 'Name and email are required.';
