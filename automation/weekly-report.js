@@ -6,7 +6,25 @@ import cron from 'node-cron';
 dotenv.config();
 
 const apiBase = process.env.API_BASE_URL || 'http://localhost:3000/api';
-const adminToken = process.env.ADMIN_TOKEN;
+let adminToken = process.env.ADMIN_TOKEN;
+
+async function ensureAdminToken() {
+  if (adminToken) return adminToken;
+  const email = process.env.ADMIN_EMAIL;
+  const pass = process.env.ADMIN_PASSWORD;
+  if (email && pass) {
+    try {
+      const resp = await axios.post(`${apiBase}/auth/login`, { email, password: pass });
+      adminToken = resp.data.token;
+      console.log('Obtained admin token via login');
+      return adminToken;
+    } catch (err) {
+      console.error('Failed to obtain admin token via login:', err.message || err);
+      return null;
+    }
+  }
+  return null;
+}
 
 const mailer = nodemailer.createTransport({
   host: process.env.SMTP_HOST,
@@ -19,18 +37,45 @@ const mailer = nodemailer.createTransport({
 });
 
 async function fetchUsers() {
-  const { data } = await axios.get(`${apiBase}/admin/users`, {
-    headers: { Authorization: `Bearer ${adminToken}` }
-  });
-  return data.users || [];
+  if (!adminToken) await ensureAdminToken();
+  try {
+    const { data } = await axios.get(`${apiBase}/admin/users`, {
+      headers: { Authorization: `Bearer ${adminToken}` }
+    });
+    return data.users || [];
+  } catch (err) {
+    if (err.response && err.response.status === 401) {
+      console.log('Admin token invalid, attempting to re-authenticate');
+      await ensureAdminToken();
+      const { data } = await axios.get(`${apiBase}/admin/users`, {
+        headers: { Authorization: `Bearer ${adminToken}` }
+      });
+      return data.users || [];
+    }
+    throw err;
+  }
 }
 
 async function fetchWeeklySummary(userId) {
-  const { data } = await axios.get(`${apiBase}/stats/weekly-summary`, {
-    headers: { Authorization: `Bearer ${adminToken}` },
-    params: { user_id: userId }
-  });
-  return data;
+  if (!adminToken) await ensureAdminToken();
+  try {
+    const { data } = await axios.get(`${apiBase}/stats/weekly-summary`, {
+      headers: { Authorization: `Bearer ${adminToken}` },
+      params: { user_id: userId }
+    });
+    return data;
+  } catch (err) {
+    if (err.response && err.response.status === 401) {
+      console.log('Admin token invalid, attempting to re-authenticate');
+      await ensureAdminToken();
+      const { data } = await axios.get(`${apiBase}/stats/weekly-summary`, {
+        headers: { Authorization: `Bearer ${adminToken}` },
+        params: { user_id: userId }
+      });
+      return data;
+    }
+    throw err;
+  }
 }
 
 async function sendSummaryEmail(user, stats) {
@@ -78,4 +123,4 @@ async function runWeeklyReport() {
 }
 
 cron.schedule('* * * * *', runWeeklyReport);
-//cron.schedule('0 20 * * 0', runWeeklyReport); sunday at 8pm
+//cron.schedule('0 20 * * 0', runWeeklyReport);
